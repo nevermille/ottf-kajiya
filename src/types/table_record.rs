@@ -28,7 +28,7 @@ impl Export for TableRecord {
     fn export(&self) -> Result<Vec<u8>, ExportError> {
         let mut res = Vec::with_capacity(16);
 
-        res.append(&mut self.tag.into_bytes());
+        res.append(&mut self.tag.clone().into_bytes());
         res.append(&mut self.checksum.to_be_bytes().to_vec());
         res.append(&mut self.offset.to_be_bytes().to_vec());
         res.append(&mut self.length.to_be_bytes().to_vec());

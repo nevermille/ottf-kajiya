@@ -31,21 +31,19 @@ impl Kajiya {
 
         // The header is 12 bytes long
         if raw_data.len() < 12 {
-            return Err(Box::new(ParseError::from_message(
-                "Unexpected end for font header",
-            )));
+            return Err(Box::new(ParseError::unexpected_end("header")));
         }
 
+        // Data extraction
         res.sfnt_version = u32::from_be_bytes(raw_data[0..4].try_into().unwrap_or_default());
         res.num_tables = u16::from_be_bytes(raw_data[4..6].try_into().unwrap_or_default());
         res.search_range = u16::from_be_bytes(raw_data[6..8].try_into().unwrap_or_default());
         res.entry_selector = u16::from_be_bytes(raw_data[8..10].try_into().unwrap_or_default());
         res.range_shift = u16::from_be_bytes(raw_data[10..12].try_into().unwrap_or_default());
 
+        // The table records segment is 16 bytes per table
         if raw_data.len() < (12 + res.num_tables * 16) as usize {
-            return Err(Box::new(ParseError::from_message(
-                "Unexpected end for table records",
-            )));
+            return Err(Box::new(ParseError::unexpected_end("header/TableRecords")));
         }
 
         for i in 0..res.num_tables {

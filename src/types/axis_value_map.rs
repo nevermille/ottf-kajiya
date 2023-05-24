@@ -1,6 +1,7 @@
-use crate::error::ParseError;
+use crate::error::{ExportError, ParseError};
 use crate::traits::{Export, Parse};
 
+/// Axis value map records for an axis
 pub struct AxisValueMap {
     /// A normalized coordinate value obtained using default normalization
     ///
@@ -16,7 +17,7 @@ pub struct AxisValueMap {
 impl Parse for AxisValueMap {
     fn parse(data: &[u8]) -> Result<AxisValueMap, ParseError> {
         if data.len() < 4 {
-            return Err(ParseError::from_message("Unexpected end for AxisValueMap"));
+            return Err(ParseError::unexpected_end("avar/SegmentMaps/AxisValueMap"));
         }
 
         let from_coordinate = u16::from_be_bytes(data[0..2].try_into().unwrap_or_default());
@@ -30,12 +31,13 @@ impl Parse for AxisValueMap {
 }
 
 impl Export for AxisValueMap {
-    fn export(&self) -> Vec<u8> {
+    fn export(&self) -> Result<Vec<u8>, ExportError> {
         let mut res = Vec::with_capacity(4);
 
+        // Export fromCoordinate and toCoordinate
         res.append(&mut self.from_coordinate.to_be_bytes().to_vec());
         res.append(&mut self.to_coordinate.to_be_bytes().to_vec());
 
-        res
+        Ok(res)
     }
 }
