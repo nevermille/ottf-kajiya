@@ -1,11 +1,18 @@
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
 
+/// An error during export
 pub struct ExportError {
+    /// The error message
     message: String,
 }
 
 impl ExportError {
+    /// Creates an error from a message
+    ///
+    /// # Parameters
+    ///
+    /// * `message`: The error message
     pub fn from_message(message: &str) -> Self {
         Self {
             message: message.to_string(),

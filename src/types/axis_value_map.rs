@@ -1,7 +1,10 @@
-use crate::error::{ExportError, ParseError};
-use crate::traits::{Export, Parse};
+use crate::error::ExportError;
+use crate::error::ParseError;
+use crate::traits::Export;
+use crate::traits::Parse;
 
 /// Axis value map records for an axis
+#[derive(Default, Clone)]
 pub struct AxisValueMap {
     /// A normalized coordinate value obtained using default normalization
     ///

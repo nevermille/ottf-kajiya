@@ -1,10 +1,18 @@
 use crate::error::{ExportError, ParseError};
 use crate::traits::{Export, Parse};
 
+/// A table descriptor
 pub struct TableRecord {
+    /// Table identifier
     pub tag: String,
+
+    /// Checksum for this table
     pub checksum: u32,
+
+    /// Offset from beginning of font file
     pub offset: u32,
+
+    /// Length of this table
     pub length: u32,
 }
 

@@ -1,23 +1,39 @@
 use std::error::Error;
-use std::fmt::{Debug, Display, Formatter};
+use std::fmt::Debug;
+use std::fmt::Display;
+use std::fmt::Formatter;
 
+/// An error during parsing
 pub struct ParseError {
+    /// The error message
     pub message: String,
+
+    /// The error type
     pub kind: String,
 }
 
 impl ParseError {
+    /// Creates an error from the message
+    ///
+    /// # Parameters
+    ///
+    /// * `message`: The error message
     pub fn from_message(message: &str) -> Self {
         Self {
             message: message.to_string(),
-            kind: String::new(),
+            kind: "Error".to_string(),
         }
     }
 
+    /// Error from a too short segment
+    ///
+    /// # Parameters
+    ///
+    /// * `segment_name`: The segment name
     pub fn unexpected_end(segment_name: &str) -> Self {
         Self {
             message: format!("Unexpected end for {}", segment_name),
-            kind: "Unexpected end".to_string(),
+            kind: "UnexpectedEnd".to_string(),
         }
     }
 }

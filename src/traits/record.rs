@@ -2,7 +2,9 @@ use crate::error::ExportError;
 use crate::traits::{Export, Measure};
 use std::num::Wrapping;
 
-pub trait Record: Measure + Export {
+/// Makes the structure able to export as a TableRecord
+pub trait Record: Export + Measure {
+    /// Calculates the segment's checksum
     fn checksum(&self) -> Result<u32, ExportError> {
         let mut bytes = self.export()?;
         let mut checksum = Wrapping(0u32);

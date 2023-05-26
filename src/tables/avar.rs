@@ -1,28 +1,27 @@
-use crate::error::ParseError;
-use crate::traits::Parse;
+use crate::error::{ExportError, ParseError};
+use crate::traits::{Export, Measure, Parse};
 use crate::types::SegmentMaps;
 
+#[derive(Default, Clone)]
+/// The axis variations table ('avar') is an optional table used in variable fonts
 pub struct Avar {
+    /// Major version number of the axis variations table — set to 1
     pub major_version: u16,
-    pub minor_version: u16,
-    pub reserved: u16,
-    pub segment_maps: Vec<SegmentMaps>,
-}
 
-impl Avar {
-    fn new_empty() -> Self {
-        Self {
-            major_version: 0,
-            minor_version: 0,
-            reserved: 0,
-            segment_maps: vec![],
-        }
-    }
+    /// Minor version number of the axis variations table — set to 0
+    pub minor_version: u16,
+
+    /// Permanently reserved; set to zero
+    pub reserved: u16,
+
+    /// The segment maps array — one segment map for each axis,
+    /// in the order of axes specified in the 'fvar' table
+    pub segment_maps: Vec<SegmentMaps>,
 }
 
 impl Parse for Avar {
     fn parse(data: &[u8]) -> Result<Self, ParseError> {
-        let mut res = Self::new_empty();
+        let mut res = Self::default();
 
         // We need at least 8 bytes
         if data.len() < 8 {
@@ -47,8 +46,30 @@ impl Parse for Avar {
 
             // We parse each SegmentMaps and we update the offset
             let segment_maps = SegmentMaps::parse(&data[offset..])?;
-            offset += segment_maps.len();
+            offset += segment_maps.len() as usize;
             res.segment_maps.push(segment_maps);
+        }
+
+        Ok(res)
+    }
+}
+
+impl Export for Avar {
+    fn export(&self) -> Result<Vec<u8>, ExportError> {
+        let mut res = Vec::new();
+
+        // Export majorVersion, minorVersion and <reserved>
+        res.append(&mut self.major_version.to_be_bytes().to_vec());
+        res.append(&mut self.minor_version.to_be_bytes().to_vec());
+        res.append(&mut self.reserved.to_be_bytes().to_vec());
+
+        // Export axisCount
+        let axis_count = self.segment_maps.len() as u16;
+        res.append(&mut axis_count.to_be_bytes().to_vec());
+
+        // Export axisSegmentMaps
+        for sm in &self.segment_maps {
+            res.append(&mut sm.export()?);
         }
 
         Ok(res)

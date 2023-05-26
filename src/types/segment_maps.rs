@@ -2,22 +2,12 @@ use crate::error::{ExportError, ParseError};
 use crate::traits::{Export, Measure, Parse};
 use crate::types::axis_value_map::AxisValueMap;
 
+#[derive(Default, Clone)]
+/// The segment maps array — one segment map for each axis,
+/// in the order of axes specified in the 'fvar' table
 pub struct SegmentMaps {
     /// The array of axis value map records for this axis
     pub axis_value_map: Vec<AxisValueMap>,
-}
-
-impl SegmentMaps {
-    fn new_empty() -> Self {
-        Self {
-            axis_value_map: Vec::new(),
-        }
-    }
-
-    /// Returns the length in bytes of the segment
-    pub fn len(&self) -> usize {
-        2 + self.axis_value_map.len() * 4
-    }
 }
 
 impl Measure for SegmentMaps {
@@ -28,7 +18,7 @@ impl Measure for SegmentMaps {
 
 impl Parse for SegmentMaps {
     fn parse(data: &[u8]) -> Result<SegmentMaps, ParseError> {
-        let mut res = Self::new_empty();
+        let mut res = Self::default();
 
         if data.len() < 2 {
             return Err(ParseError::unexpected_end("avar/SegmentMaps"));

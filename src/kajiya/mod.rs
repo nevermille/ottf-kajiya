@@ -1,57 +1,68 @@
 use crate::error::ParseError;
+use crate::tables::Tables;
 use crate::traits::Parse;
 use crate::types::TableRecord;
 use std::error::Error;
 
+/// The main structure, representing an OTTF font file
+#[derive(Default, Clone)]
 pub struct Kajiya {
+    /// 0x00010000 or 0x4F54544F ('OTTO')
+    ///
+    /// OpenType fonts that contain TrueType outlines should use the value$
+    /// of 0x00010000 for the sfntVersion. OpenType fonts containing CFF data
+    /// (version 1 or 2) should use 0x4F54544F ('OTTO', when re-interpreted as a Tag)
+    /// for sfntVersion
     pub sfnt_version: u32,
-    pub num_tables: u16,
-    pub search_range: u16,
-    pub entry_selector: u16,
-    pub range_shift: u16,
-    pub table_records: Vec<TableRecord>,
+
+    /// The font's tables
+    pub tables: Tables,
 }
 
 impl Kajiya {
-    fn new_empty() -> Self {
-        Self {
-            sfnt_version: 0,
-            num_tables: 0,
-            search_range: 0,
-            entry_selector: 0,
-            range_shift: 0,
-            table_records: vec![],
-        }
-    }
-
-    pub fn parse(path: &str) -> Result<Self, Box<dyn Error>> {
+    /// Parses the entire font file
+    ///
+    /// # Parameters
+    ///
+    /// * `path`: The font's path
+    pub fn from_file(path: &str) -> Result<Self, Box<dyn Error>> {
         // Load font file
         let raw_data = std::fs::read(path)?;
-        let mut res = Self::new_empty();
+
+        // Parse file
+        Ok(Self::parse(&raw_data)?)
+    }
+}
+
+impl Parse for Kajiya {
+    fn parse(data: &[u8]) -> Result<Self, ParseError> {
+        let mut res = Self::default();
 
         // The header is 12 bytes long
-        if raw_data.len() < 12 {
-            return Err(Box::new(ParseError::unexpected_end("header")));
+        if data.len() < 12 {
+            return Err(ParseError::unexpected_end("header"));
         }
 
-        // Data extraction
-        res.sfnt_version = u32::from_be_bytes(raw_data[0..4].try_into().unwrap_or_default());
-        res.num_tables = u16::from_be_bytes(raw_data[4..6].try_into().unwrap_or_default());
-        res.search_range = u16::from_be_bytes(raw_data[6..8].try_into().unwrap_or_default());
-        res.entry_selector = u16::from_be_bytes(raw_data[8..10].try_into().unwrap_or_default());
-        res.range_shift = u16::from_be_bytes(raw_data[10..12].try_into().unwrap_or_default());
+        // Data extraction, we don't need searchRange, entrySelector and rangeShift
+        res.sfnt_version = u32::from_be_bytes(data[0..4].try_into().unwrap_or_default());
+        let num_tables = u16::from_be_bytes(data[4..6].try_into().unwrap_or_default());
 
         // The table records segment is 16 bytes per table
-        if raw_data.len() < (12 + res.num_tables * 16) as usize {
-            return Err(Box::new(ParseError::unexpected_end("header/TableRecords")));
+        if data.len() < (12 + num_tables * 16) as usize {
+            return Err(ParseError::unexpected_end("header/TableRecords"));
         }
 
-        for i in 0..res.num_tables {
+        // Table records extraction
+        for i in 0..num_tables {
             let first_byte_index = (12 + i * 16) as usize;
             let last_byte_index = (12 + (i + 1) * 16) as usize;
 
-            let table_record = TableRecord::parse(&raw_data[first_byte_index..last_byte_index]);
-            res.table_records.push(table_record?);
+            let table_record = TableRecord::parse(&data[first_byte_index..last_byte_index])?;
+            let first_byte = table_record.offset as usize;
+            let last_byte = first_byte + table_record.length as usize;
+
+            res.tables
+                .add_table(&table_record.tag, &data[first_byte..last_byte])?;
         }
 
         Ok(res)
